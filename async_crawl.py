@@ -6,7 +6,7 @@ from crawl import normalize_url, extract_page_data, parse_domain
 
 class AsyncCrawler:
 
-    def __init__(self, base_url, max_concurrency, debug=False, max_size=1000):
+    def __init__(self, base_url, max_concurrency, debug=False):
         self.base_url = base_url
         self.base_domain = parse_domain(normalize_url(self.base_url))
         self.page_data = {}
@@ -14,7 +14,7 @@ class AsyncCrawler:
         self.visited = set()
         self.max_concurrency = max_concurrency
         self.semaphore = asyncio.Semaphore(self.max_concurrency)
-        self.queue = asyncio.Queue(max_size)
+        self.queue = asyncio.Queue()
         self.num_pages_visited = 0
         self.debug = debug
 
@@ -85,10 +85,10 @@ class AsyncCrawler:
             page_data = extract_page_data(html, self.base_url)
             self.page_data[norm_url] = page_data
 
+            self.queue.task_done()
+
             for child_url in page_data["outgoing_links"]:
                 await self.queue.put(child_url)
-
-            self.queue.task_done()
 
     async def crawl(self):
         workers = [

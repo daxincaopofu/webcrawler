@@ -85,10 +85,10 @@ class AsyncCrawler:
             page_data = extract_page_data(html, self.base_url)
             self.page_data[norm_url] = page_data
 
-            self.queue.task_done()
-
             for child_url in page_data["outgoing_links"]:
                 await self.queue.put(child_url)
+
+            self.queue.task_done()
 
     async def crawl(self):
         workers = [

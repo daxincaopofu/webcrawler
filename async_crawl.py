@@ -6,7 +6,7 @@ from crawl import normalize_url, extract_page_data, parse_domain
 
 class AsyncCrawler:
 
-    def __init__(self, base_url, max_concurrency, debug=False):
+    def __init__(self, base_url, max_concurrency, max_pages, debug=False):
         self.base_url = base_url
         self.base_domain = parse_domain(normalize_url(self.base_url))
         self.page_data = {}
@@ -17,6 +17,7 @@ class AsyncCrawler:
         self.queue = asyncio.Queue()
         self.num_pages_visited = 0
         self.debug = debug
+        self.max_pages = max_pages
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession(headers={"User-Agent": "BootCrawler/1.0"})
@@ -28,6 +29,8 @@ class AsyncCrawler:
 
     async def get_html_async(self, url: str) -> str:
         async with self.semaphore:
+            if self.debug:
+                print(f"Visiting {url}")
             try:
                 timeout = aiohttp.ClientTimeout(total=30)
                 async with self.session.request(
@@ -81,7 +84,12 @@ class AsyncCrawler:
                 self.queue.task_done()
                 continue
 
-            self.num_pages_visited += 1
+            async with self.lock:
+                if self.num_pages_visited >= self.max_pages:
+                    self.queue.task_done()
+                    continue
+                self.num_pages_visited += 1
+
             page_data = extract_page_data(html, self.base_url)
             self.page_data[norm_url] = page_data
 

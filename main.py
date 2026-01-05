@@ -1,4 +1,5 @@
 import sys
+import time
 import aiohttp, asyncio
 from crawl import crawl_page
 from async_crawl import AsyncCrawler
@@ -24,7 +25,9 @@ def main():
     sys.exit(0)
 
 
-async def main_async():
+async def main_async(max_concurrency):
+
+    print(f"Running with {max_concurrency} workers")
 
     if len(sys.argv) > 2:
         print("too many arguments provided")
@@ -35,26 +38,34 @@ async def main_async():
 
     base_url = sys.argv[1]
 
+    start_time = time.perf_counter()
+
     # Initialize session
-    async with aiohttp.ClientSession() as client:
-        crawler = AsyncCrawler(
-            base_url=base_url,
-            page_data={},
-            max_concurrency=10,
-            session=client,
-            debug=True,
-        )
-        await crawler.async_crawl()
+    async with AsyncCrawler(
+        base_url=base_url,
+        max_concurrency=max_concurrency,
+        debug=False,
+    ) as crawler:
+        await crawler.crawl()
 
-    for url, rich_data in crawler.page_data.items():
-        print(url, rich_data)
-        print("-----------------")
-    print(f"Visited {crawler.num_pages_visited} pages under {crawler.base_url}")
-    print(f"Unique pages: {len(crawler.page_data.keys())}")
+        # for url, rich_data in crawler.page_data.items():
+        #     print(url, rich_data)
+        #     print("-----------------")
+        print(f"Visited {crawler.num_pages_visited} pages under {crawler.base_url}")
+        # print(f"Unique pages: {len(crawler.page_data.keys())}")
 
-    sys.exit(0)
+    # Code to be timed goes here
+    end_time = time.perf_counter()
+
+    elapsed_time = end_time - start_time
+    print(f"Execution time: {elapsed_time} seconds")
 
 
 if __name__ == "__main__":
     # main()
-    asyncio.run(main_async())
+
+    for n_workers in [1, 2, 5, 10]:
+        asyncio.run(main_async(n_workers))
+        time.sleep(2)
+
+    sys.exit(0)

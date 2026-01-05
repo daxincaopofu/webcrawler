@@ -9,3 +9,11 @@ dependencies = [
     "beautifulsoup4==4.13.4",
     "requests==2.32.4",
 ]
+
+
+[tool.black]
+line-length = 88
+# Black will format files in-place. Configure any additional options here.
+
+[tool.isort]
+profile = "black"

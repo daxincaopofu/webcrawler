@@ -1,6 +1,7 @@
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 import requests
+import csv
 
 
 def normalize_url(url: str) -> str:
@@ -121,3 +122,27 @@ def crawl_page(base_url, debug=True):
             urls_to_visit.append(child_url)
 
     return page_data, num_pages_visited
+
+
+def write_csv_report(page_data: dict, filename="report.csv"):
+
+    with open(filename, "w", newline="") as csvfile:
+        fieldnames = [
+            "page_url",
+            "h1",
+            "first_paragraph",
+            "outgoing_link_urls",
+            "image_urls",
+        ]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for page in page_data.values():
+            writer.writerow(
+                {
+                    "page_url": page["url"],
+                    "h1": page["h1"],
+                    "first_paragraph": page["first_paragraph"],
+                    "outgoing_link_urls": ";".join(page["outgoing_links"]),
+                    "image_urls": ";".join(page["image_urls"]),
+                }
+            )
